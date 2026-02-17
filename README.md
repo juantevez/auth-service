@@ -328,21 +328,237 @@ Respuesta:
 ```
 
 ### 2. Login
-
+```bash    
 curl -X POST http://localhost:8084/auth/login \
 -H "Content-Type: application/json" \
 -d '{
 "email": "usuario@bike.com",
 "password": "SecurePass123!"
 }'
-
+```
 
 ### 3. Refresh Token
 
+```
    curl -X POST http://localhost:8084/auth/refresh \
    -H "Content-Type: application/json" \
    -d '{
    "refreshToken": "xxx-xxx-xxx"
    }'
+```
 
+### 4. Endpoint Protegido
+
+```
+curl -X GET http://localhost:8084/auth/me \
+-H "Authorization: Bearer eyJhbGciOiJSUzI1NiJ9..."
+```
+
+### 5. Logout
+
+``` 
+curl -X POST http://localhost:8084/auth/logout \
+  -H "Authorization: Bearer eyJhbGciOiJSUzI1NiJ9..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "xxx-xxx-xxx"
+  }'
+```
+
+### Variables de Entorno
+
+
+| Variable | Descripción | Default                                    | Requerida |
+|-------------|--------|--------------------------------------------|-------------|
+|POST | /auth/register | Registrar nuevo usuario con email/password | ❌ |
+|DB_USERNAME|	Usuario de PostgreSQL| 	auth_user                                 |	✅|
+|DB_PASSWORD|	Contraseña de PostgreSQL| 	-                                         |	✅|
+|GOOGLE_CLIENT_ID|	Client ID de Google OAuth2| 	-                                         |	❌|
+|GOOGLE_CLIENT_SECRET|	Client Secret de Google OAuth2| 	-                                         | 	❌                                         |
+|FACEBOOK_CLIENT_ID|	App ID de Facebook OAuth2| 	-                                         |	❌|
+|FACEBOOK_CLIENT_SECRET|	App Secret de Facebook OAuth2| 	-                                         |	❌|
+|SPRING_PROFILES_ACTIVE|	Perfil de Spring| 	dev                                       | 	❌                                         |
+|LOGGING_LEVEL|	Nivel de log root| 	INFO                                      | 	❌                                         |
+|LOGGING_LEVEL_COM_BIKE_AUTH|	Nivel de log del servicio|	DEBUG|	❌|
+
+
+### Comandos Útiles
+
+### Makefile
+
+
+| Comando | Descripción |
+|-------------|--------|
+|make help | Mostrar ayuda de comandos |
+|make up|	Levantar base de datos|
+|make down|	Detener servicios|
+|make migrate|	Ejecutar migraciones Flyway|
+|make status|	Ver estado de migraciones|
+|make logs|	Ver logs en tiempo real|
+|make shell|	Conectarse a la BD (psql)|
+|make clean|	Eliminar contenedores y volúmenes|
+|make reset|	Limpiar y migrar desde cero|
+
+
+### Docker
+
+```
+# Construir imagen
+docker-compose build
+
+# Levantar servicios
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f auth-service
+
+# Detener servicios
+docker-compose down
+
+# Detener y eliminar volúmenes
+docker-compose down -v
+
+# Ejecutar tests en contenedor
+docker-compose run --rm auth-service mvn test
+```
+
+### Maven
+
+```
+# Limpiar y compilar
+mvn clean compile
+
+# Ejecutar tests
+mvn test
+
+# Empaquetar JAR
+mvn package -DskipTests
+
+# Ejecutar aplicación
+mvn spring-boot:run
+
+# Ver dependencias
+mvn dependency:tree
+```
+
+### 🔒 Seguridad
+
+### Mejores Prácticas Implementadas
+
+
+| Práctica | Implementación |
+|-------------|--------|
+|Passwords | BCrypt con cost factor 12 |
+|JWT | Firma RSA-256 asimétrica |
+|Refresh Tokens | Hash en BD, rotación, revocación |
+|Rate Limiting | 5 intentos fallidos → 30 min |
+|Bloqueo de Cuenta | 5 intentos fallidos → 30 min |
+|Auditoría | Logs de todos los eventos de auth |
+|HTTPS | Requerido en producción |
+|Secrets | Variables de entorno (no hardcodear) |
+		
+	
+
+### Claves JWT
+
+```
+# Generar nuevas claves (rotación)
+./scripts/generate-jwt-keys.sh
+
+# Verificar clave pública
+openssl rsa -in certs/public.pem -pubin -text -noout
+
+# NUNCA commitear private.pem
+echo "certs/private.pem" >> .gitignore
+```
+
+Headers de Seguridad (Producción)
+Agregar en el Gateway o Load Balancer:
+
+```
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Content-Security-Policy: default-src 'self' 
+```
+
+
+### 🧪 Tests
+### Ejecutar Tests
+
+```
+# Todos los tests
+mvn test
+
+# Tests unitarios
+mvn test -Dtest=*Test
+
+# Tests de integración
+mvn test -Dtest=*IT
+
+# Con cobertura
+mvn test jacoco:report
+```
+
+### 🚢 Producción
+### Checklist de Producción
+
+
+| Item | Estado | Notas  | 
+|-------------|--------|-------| 
+|SSL/TLS|	⬜	| HTTPS obligatorio|
+|Secrets Management|	⬜|	Vault / K8s Secrets|
+|Rate Limiting|	⬜|	En API Gateway|
+|Monitoring	|⬜	|Prometheus + Grafana|
+|Logging Centralizado|	⬜	|ELK / CloudWatch|
+|Backup de BD	|⬜	|Automático diario|
+|Health Checks	|⬜	|/actuator/health|
+|Resource Limits|	⬜	|CPU/Memory en K8s|
+
+
+### Kubernetes (Ejemplo)
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: auth-service
+spec:
+replicas: 3
+template:
+spec:
+containers:
+- name: auth-service
+image: bike/auth-service:1.0.0
+ports:
+- containerPort: 8084
+resources:
+limits:
+memory: "512Mi"
+cpu: "1000m"
+requests:
+memory: "256Mi"
+cpu: "500m"
+livenessProbe:
+httpGet:
+path: /actuator/health
+port: 8084
+initialDelaySeconds: 60
+periodSeconds: 10
+```
+
+## Licencia
+
+Proprietary - Bike Ecosystem © 2026
+
+
+##🎯 Próximos Pasos
+
+- Implementar OAuth2 completo (Google, Facebook, Apple)
+- Agregar 2FA (TOTP)
+- Verificación de email con tokens
+- Rate limiting en Gateway
+- Tests de carga con k6
+- Documentación OpenAPI completa
 
