@@ -16,6 +16,8 @@ public interface UserMapper {
     @Mapping(target = "email", source = "email.value")
     @Mapping(target = "status", qualifiedByName = "statusToString")
     @Mapping(target = "emailVerified", constant = "false")
+    @Mapping(target = "phoneNumber", source = "phoneNumber.value")  // ← Nuevo
+    @Mapping(target = "phoneVerified", source = "phoneVerified")    // ← Nuevo
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)

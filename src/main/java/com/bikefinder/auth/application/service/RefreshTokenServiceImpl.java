@@ -57,6 +57,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
+                        user.getPhoneNumber(),
+                        user.isPhoneVerified(),
                         user.getAvatarUrl()
                 )
         );

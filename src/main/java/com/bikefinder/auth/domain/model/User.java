@@ -1,6 +1,7 @@
 package com.bikefinder.auth.domain.model;
 
 import com.bikefinder.auth.domain.valueobject.Email;
+import com.bikefinder.auth.domain.valueobject.PhoneNumber;
 import com.bikefinder.auth.domain.valueobject.UserId;
 import com.bikefinder.auth.domain.valueobject.UserStatus;
 
@@ -14,6 +15,9 @@ public class User {
     private Email email;
     private UserStatus status;
     private String fullName;
+    private PhoneNumber phoneNumber;
+    private boolean phoneVerified;
+
     private String avatarUrl;
 
     // Entidades hijas dentro del Aggregate
@@ -45,6 +49,32 @@ public class User {
         user.status = UserStatus.valueOf(status);
         user.avatarUrl = avatarUrl;
         return user;
+    }
+
+    /**
+     * Agrega/actualiza el número de teléfono
+     */
+    public void updatePhoneNumber(PhoneNumber phoneNumber) {
+        this.phoneNumber = phoneNumber;
+        this.phoneVerified = false;  // Requiere re-verificación
+    }
+
+    /**
+     * Marca el teléfono como verificado (tras enviar SMS y confirmar código)
+     */
+    public void verifyPhoneNumber() {
+        if (this.phoneNumber == null) {
+            throw new IllegalStateException("No hay teléfono para verificar");
+        }
+        this.phoneVerified = true;
+    }
+
+    /**
+     * Elimina el teléfono asociado
+     */
+    public void removePhoneNumber() {
+        this.phoneNumber = null;
+        this.phoneVerified = false;
     }
 
     // --- Métodos de Comportamiento (Business Logic) ---
@@ -93,5 +123,6 @@ public class User {
     }
     public List<SocialIdentity> getSocialIdentities() { return List.copyOf(socialIdentities); }
     public Instant getLastLoginAt() { return lastLoginAt; }
-
+    public PhoneNumber getPhoneNumber() { return phoneNumber; }
+    public boolean isPhoneVerified() { return phoneVerified; }
 }

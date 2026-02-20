@@ -1,5 +1,7 @@
 package com.bikefinder.auth.application.dto;
 
+import com.bikefinder.auth.domain.valueobject.PhoneNumber;
+
 import java.time.Instant;
 
 public record AuthResponseDto(
@@ -14,6 +16,8 @@ public record AuthResponseDto(
             String id,
             String email,
             String fullName,
+            PhoneNumber phoneNumber,
+            Boolean phoneVerified,
             String avatarUrl
     ) {}
 }

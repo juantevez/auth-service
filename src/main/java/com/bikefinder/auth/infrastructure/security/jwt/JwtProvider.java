@@ -62,24 +62,20 @@ public class JwtProvider {
         }
     }
 
-  // private PublicKey getPublicKey() {
-  //     try {
-  //         String key = new String(publicKeyResource.getContentAsString(StandardCharsets.UTF_8));
-  //         key = key.replace("-----BEGIN PUBLIC KEY-----", "")
-  //                 .replace("-----END PUBLIC KEY-----", "")
-  //                 .replaceAll("\\s", "");
-  //         byte[] keyBytes = Base64.getDecoder().decode(key);
-  //         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-  //         KeyFactory kf = KeyFactory.getInstance("RSA");
-  //         return kf.generatePublic(spec);
-  //     } catch (Exception e) {
-  //         throw new RuntimeException("Error al cargar clave pública", e);
-  //     }
-  // }
-    // Agrega este método público en JwtProvider.java
-    public PublicKey getPublicKey() {
-        return getPublicKey(); // Reutiliza el método privado existente (cámbiale la visibilidad)
-    }
+  public PublicKey getPublicKey() {
+      try {
+          String key = new String(publicKeyResource.getContentAsString(StandardCharsets.UTF_8));
+          key = key.replace("-----BEGIN PUBLIC KEY-----", "")
+                  .replace("-----END PUBLIC KEY-----", "")
+                  .replaceAll("\\s", "");
+          byte[] keyBytes = Base64.getDecoder().decode(key);
+          X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+          KeyFactory kf = KeyFactory.getInstance("RSA");
+          return kf.generatePublic(spec);
+      } catch (Exception e) {
+          throw new RuntimeException("Error al cargar clave pública", e);
+      }
+  }
 
     public String generateAccessToken(UserId userId, String email) {
         return buildToken(userId.value(), email, jwtExpirationMs);

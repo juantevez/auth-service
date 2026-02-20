@@ -553,7 +553,7 @@ periodSeconds: 10
 Proprietary - Bike Ecosystem © 2026
 
 
-##🎯 Próximos Pasos
+## 🎯 Próximos Pasos
 
 - Implementar OAuth2 completo (Google, Facebook, Apple)
 - Agregar 2FA (TOTP)

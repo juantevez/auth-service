@@ -1,144 +1,33 @@
 version: '3.8'
 
 services:
-  # ===========================================================================
-  # AUTH SERVICE
-  # ===========================================================================
   auth-service:
     build:
       context: .
       dockerfile: Dockerfile
+    image: bikefinder/auth-service:latest
     container_name: auth-service
-    hostname: auth-service
     ports:
       - "8084:8084"
     environment:
-      # --- Database ---
-      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5433/auth_db
-      SPRING_DATASOURCE_USERNAME: auth_bike_user
-      SPRING_DATASOURCE_PASSWORD: localdev123
-
-      # --- JWT Keys (En producción usar secrets o volumes) ---
-      AUTH_JWT_PRIVATE_KEY_PATH: classpath:certs/private.pem
-      AUTH_JWT_PUBLIC_KEY_PATH: classpath:certs/public.pem
-
-      # --- JWT Config ---
+      SPRING_DATASOURCE_URL: jdbc:postgresql://bikefinder-postgres:5432/bikefinder_db?currentSchema=auth
+      SPRING_DATASOURCE_USERNAME: bikeadmin
+      SPRING_DATASOURCE_PASSWORD: bikepass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      AUTH_JWT_PRIVATE_KEY_PATH: file:/app/certs/private.pem
+      AUTH_JWT_PUBLIC_KEY_PATH: file:/app/certs/public.pem
       AUTH_JWT_EXPIRATION_MS: 900000
       AUTH_JWT_REFRESH_EXPIRATION_MS: 604800000
       AUTH_JWT_ISSUER: auth-service
       AUTH_JWT_AUDIENCE: bike-ecosystem
-
-      # --- OAuth2 Credentials ---
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
-      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
-
-      # --- Spring Profiles ---
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
-
-      # --- Logging ---
-      LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL:-INFO}
-      LOGGING_LEVEL_COM_BIKE_AUTH: ${LOGGING_LEVEL:-DEBUG}
-
+      LOGGING_LEVEL_ROOT: INFO
+      LOGGING_LEVEL_COM_BIKEFINDER_AUTH: DEBUG
     volumes:
-      # Montar certificados JWT (en producción usar Docker Secrets)
       - ./certs:/app/certs:ro
-      # Logs (opcional)
-      - ./logs:/app/logs
-
-    depends_on:
-      auth-db:
-        condition: service_healthy
-
-    networks:
-      - bike-network
-
-    restart: unless-stopped
-
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/actuator/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 40s
-
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-
-  # ===========================================================================
-  # POSTGRESQL DATABASE
-  # ===========================================================================
-  auth-db:
-    image: postgres:15-alpine
-    container_name: auth-db
-    hostname: auth-db
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_DB: auth_db
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      PGDATA: /var/lib/postgresql/data/pgdata
-    volumes:
-      - auth-data:/var/lib/postgresql/data
-      # Script de inicialización (opcional, si flyway está en otro repo)
-      # - ./init-scripts:/docker-entrypoint-initdb.d:ro
     networks:
       - bike-network
     restart: unless-stopped
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d auth_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-
-  # ===========================================================================
-  # PGADMIN (Solo para desarrollo)
-  # ===========================================================================
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin-auth
-    hostname: pgadmin-auth
-    ports:
-      - "5050:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@bike.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    networks:
-      - bike-network
-    depends_on:
-      - auth-db
-    restart: unless-stopped
-    profiles:
-      - dev  # Solo se levanta con: docker-compose --profile dev up
 
 networks:
   bike-network:
-    driver: bridge
-    name: bike-network
-
-volumes:
-  auth-data:
-    driver: local
-    name: auth-db-data
-  pgadmin-data:
-    driver: local
-    name: pgadmin-data
+    external: true

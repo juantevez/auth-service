@@ -6,8 +6,9 @@ import com.bikefinder.auth.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.bikefinder.auth.infrastructure.persistence.entity.UserEntity;
 import com.bikefinder.auth.infrastructure.persistence.repository.JpaRefreshTokenRepository;
 import com.bikefinder.auth.infrastructure.persistence.repository.JpaUserRepository;
+import com.bikefinder.auth.infrastructure.security.util.TokenHashUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,56 +18,76 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class RefreshTokenPortImpl implements RefreshTokenPort {
 
     private final JpaRefreshTokenRepository refreshTokenRepository;
     private final JpaUserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public String createToken(UserId userId, String familyId) {
-        String rawToken = UUID.randomUUID().toString() + "-" + UUID.randomUUID().toString();
-        String tokenHash = passwordEncoder.encode(rawToken);
+        // 1. Generar token plano (aleatorio)
+        String rawToken = UUID.randomUUID() + "-" + UUID.randomUUID();
 
-        // ✅ Cargar usuario (si es necesario)
+        // 2. Hashear con SHA-256 para almacenamiento (determinístico)
+        String tokenHash = TokenHashUtil.hash(rawToken);
+
+        // 3. Cargar usuario
         UserEntity user = userRepository.findById(userId.value())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + userId.value()));
 
+        // 4. Crear entidad
         RefreshTokenEntity entity = RefreshTokenEntity.builder()
                 .id(UUID.randomUUID())
                 .user(user)
-                .tokenHash(tokenHash)
+                .tokenHash(tokenHash)  // ← SHA-256 hash
                 .familyId(UUID.fromString(familyId))
-                .expiresAt(Instant.now().plusSeconds(604800))
+                .expiresAt(Instant.now().plusSeconds(604800)) // 7 días
                 .createdAt(Instant.now())
                 .build();
 
         refreshTokenRepository.save(entity);
+        log.debug("Refresh token creado para usuario: {}", userId.value());
+
+        // 5. Retornar token PLANO (solo esta vez)
         return rawToken;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<String> validateToken(String rawToken) {
-        Optional<RefreshTokenEntity> tokenOpt = refreshTokenRepository.findByTokenHash(rawToken);
+        // 1. Hashear el token recibido
+        String tokenHash = TokenHashUtil.hash(rawToken);
 
-        if (tokenOpt.isPresent()) {
-            RefreshTokenEntity token = tokenOpt.get();
-            if (token.getExpiresAt().isAfter(Instant.now()) && token.getRevokedAt() == null) {
-                return Optional.of(token.getUser().getId().toString());
-            }
+        // 2. Buscar por hash (indexado, rápido)
+        Optional<RefreshTokenEntity> tokenOpt = refreshTokenRepository.findByTokenHash(tokenHash);
+
+        if (tokenOpt.isEmpty()) {
+            log.warn("Refresh token no encontrado");
+            return Optional.empty();
         }
-        return Optional.empty();
+
+        RefreshTokenEntity token = tokenOpt.get();
+
+        // 3. Verificar expiración y revocación
+        if (token.getExpiresAt().isBefore(Instant.now()) || token.getRevokedAt() != null) {
+            log.warn("Refresh token inválido: expirado o revocado");
+            return Optional.empty();
+        }
+
+        return Optional.of(token.getUser().getId().toString());
     }
 
     @Override
     @Transactional
     public void revokeToken(String rawToken) {
-        refreshTokenRepository.findByTokenHash(rawToken)
+        String tokenHash = TokenHashUtil.hash(rawToken);
+        refreshTokenRepository.findByTokenHash(tokenHash)
                 .ifPresent(token -> {
                     token.setRevokedAt(Instant.now());
                     refreshTokenRepository.save(token);
+                    log.info("Refresh token revocado: {}", token.getId());
                 });
     }
 
@@ -74,11 +95,13 @@ public class RefreshTokenPortImpl implements RefreshTokenPort {
     @Transactional
     public void revokeAllUserTokens(UserId userId) {
         refreshTokenRepository.deleteByUserId(userId.value());
+        log.info("Todos los tokens revocados para usuario: {}", userId.value());
     }
 
     @Override
     @Transactional
     public void revokeFamilyTokens(String familyId) {
         // Implementar según necesites
+        log.debug("Revocando familia de tokens: {}", familyId);
     }
 }

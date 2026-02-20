@@ -51,4 +51,4 @@ logs/
 Thumbs.db
 
 ### Certs (se montan como volumen) ###
-src/main/resources/certs/
+certs/

@@ -77,6 +77,8 @@ public class RegisterUserServiceImpl implements RegisterUserUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
+                        user.getPhoneNumber(),
+                        user.isPhoneVerified(),
                         user.getAvatarUrl()
                 )
         );

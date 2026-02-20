@@ -86,6 +86,8 @@ public class LoginUserServiceImpl implements LoginUserUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
+                        user.getPhoneNumber(),
+                        user.isPhoneVerified(),
                         user.getAvatarUrl()
                 )
         );

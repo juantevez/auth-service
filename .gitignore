@@ -47,4 +47,4 @@ logs/
 *.log.*
 
 # NUNCA commits la clave privada
-src/main/resources/certs/private.pem
+certs/private.pem

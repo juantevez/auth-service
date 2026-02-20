@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "auth")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,7 +38,10 @@ public class UserEntity {
 
     @Column(name = "avatar_url")
     private String avatarUrl;
-
+    @Column(name = "phone_number", length = 20, unique = true)
+    private String phoneNumber;  // Almacenar como String (E.164)
+    @Column(name = "phone_verified")
+    private Boolean phoneVerified = false;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -48,7 +51,7 @@ public class UserEntity {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
-    @Version
+    @Version // Esto mapea tu columna "version" int4 para control de concurrencia
     private Integer version;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "credentials")
+@Table(name = "credentials", schema = "auth")
 @Getter
 @Setter
 @NoArgsConstructor

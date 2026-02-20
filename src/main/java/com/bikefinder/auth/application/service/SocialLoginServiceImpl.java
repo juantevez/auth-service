@@ -104,6 +104,8 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
+                        user.getPhoneNumber(),
+                        user.isPhoneVerified(),
                         user.getAvatarUrl()
                 )
         );

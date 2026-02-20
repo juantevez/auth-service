@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "social_identities",
+@Table(name = "social_identities", schema = "auth",
         uniqueConstraints = @UniqueConstraint(columnNames = {"provider", "provider_uid"}))
 @Getter
 @Setter
