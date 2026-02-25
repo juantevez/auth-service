@@ -21,9 +21,16 @@ public class AuthFailureHandler extends SimpleUrlAuthenticationFailureHandler {
             AuthenticationException exception
     ) throws IOException {
 
+        // Temporal para debug — sacar en producción
         log.error("Fallo en autenticación OAuth2: {}", exception.getMessage());
+        log.error("Causa raíz: ", exception); // ← agregar esto, loguea el stack trace completo
 
-        // Redirigir al frontend con error
+        // Agregar esto para ver la cadena completa de causas
+        Throwable cause = exception.getCause();
+        while (cause != null) {
+            log.error("Causado por: {} - {}", cause.getClass().getName(), cause.getMessage());
+            cause = cause.getCause();
+        }
         String targetUrl = "http://localhost:3000/auth/callback?error=" +
                 URLEncoder.encode(exception.getMessage(), StandardCharsets.UTF_8);
 

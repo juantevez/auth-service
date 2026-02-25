@@ -48,3 +48,7 @@ logs/
 
 # NUNCA commits la clave privada
 certs/private.pem
+
+# Otros archivos sensibles
+.env
+.env.local

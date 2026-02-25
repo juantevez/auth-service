@@ -24,7 +24,7 @@ public class JwksController {
         RSAPublicKey publicKey = (RSAPublicKey) jwtProvider.getPublicKey();
 
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
-                .keyID("auth-service-key")
+                .keyID(jwtProvider.getKeyId())
                 .build();
 
         JWKSet jwkSet = new JWKSet(rsaKey);

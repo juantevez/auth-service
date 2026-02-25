@@ -16,6 +16,8 @@ public interface SocialIdentityMapper {
     @Mapping(target = "accessToken", ignore = true)
     @Mapping(target = "refreshToken", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "tokenExpiresAt", ignore = true)
+    @Mapping(target = "profileData", ignore = true)
     SocialIdentityEntity toEntity(SocialIdentity identity);
 
     // --- ENTITY TO DOMAIN ---

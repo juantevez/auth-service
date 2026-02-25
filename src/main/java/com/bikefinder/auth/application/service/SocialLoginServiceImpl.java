@@ -3,21 +3,26 @@ package com.bikefinder.auth.application.service;
 import com.bikefinder.auth.application.command.SocialLoginCommand;
 import com.bikefinder.auth.application.dto.AuthResponseDto;
 import com.bikefinder.auth.application.port.input.SocialLoginUseCase;
-import com.bikefinder.auth.application.port.output.*;
+import com.bikefinder.auth.application.port.output.AuditLogPort;
+import com.bikefinder.auth.application.port.output.JwtTokenPort;
+import com.bikefinder.auth.application.port.output.RefreshTokenPort;
+import com.bikefinder.auth.application.port.output.UserEventPort;
 import com.bikefinder.auth.domain.model.SocialIdentity;
 import com.bikefinder.auth.domain.model.User;
 import com.bikefinder.auth.domain.repository.UserRepository;
 import com.bikefinder.auth.domain.valueobject.Email;
 import com.bikefinder.auth.domain.valueobject.UserId;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SocialLoginServiceImpl implements SocialLoginUseCase {
 
@@ -27,12 +32,26 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
     private final AuditLogPort auditLogPort;
     private final UserEventPort userEventPort;
 
+    @Value("${auth.jwt.expiration-ms}")
+    private long jwtExpirationMs;
+
+    public SocialLoginServiceImpl(UserRepository userRepository,
+                                  JwtTokenPort jwtTokenPort,
+                                  RefreshTokenPort refreshTokenPort,
+                                  AuditLogPort auditLogPort,
+                                  UserEventPort userEventPort) {
+        this.userRepository = userRepository;
+        this.jwtTokenPort = jwtTokenPort;
+        this.refreshTokenPort = refreshTokenPort;
+        this.auditLogPort = auditLogPort;
+        this.userEventPort = userEventPort;
+    }
+
     @Override
     @Transactional
     public AuthResponseDto execute(SocialLoginCommand command) {
         log.info("Login social con proveedor: {}", command.provider());
 
-        // 1. Buscar usuario por identidad social
         Optional<User> existingUser = userRepository.findBySocialIdentity(
                 command.provider(),
                 command.providerId()
@@ -42,43 +61,37 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
         boolean isNewUser = false;
 
         if (existingUser.isPresent()) {
-            // Usuario existente con este proveedor
             user = existingUser.get();
             log.info("Usuario encontrado por identidad social: {}", user.getId());
         } else {
-            // 2. Buscar por email (vincular cuentas)
-            Optional<User> byEmail = userRepository.findByEmail(new Email(command.email()));
+            Optional<User> byEmail = command.email() != null
+                    ? userRepository.findByEmail(new Email(command.email()))
+                    : Optional.empty();
 
             if (byEmail.isPresent()) {
-                // Vincular nueva identidad social a usuario existente
                 user = byEmail.get();
-                SocialIdentity identity = new SocialIdentity(command.provider(), command.providerId());
-                user.linkSocialIdentity(identity);
+                user.linkSocialIdentity(new SocialIdentity(command.provider(), command.providerId()));
                 userRepository.save(user);
                 log.info("Identidad social vinculada a usuario existente: {}", user.getId());
             } else {
-                // 3. Crear nuevo usuario
                 UserId userId = UserId.generate();
                 user = User.register(userId, new Email(command.email()), command.fullName());
-
-                SocialIdentity identity = new SocialIdentity(command.provider(), command.providerId());
-                user.linkSocialIdentity(identity);
+                user.linkSocialIdentity(new SocialIdentity(command.provider(), command.providerId()));
 
                 if (command.avatarUrl() != null) {
-                    // Actualizar avatar desde proveedor
+                    user.updateAvatar(command.avatarUrl()); // ← solo updateAvatar, sin save intermedio
                 }
 
-                userRepository.save(user);
+                userRepository.save(user); // ← un solo save
                 isNewUser = true;
                 log.info("Nuevo usuario creado vía social: {}", userId);
             }
         }
 
-        // 4. Generar tokens
-        String accessToken = jwtTokenPort.generateAccessToken(user.getId(), user.getEmail().value());
-        String refreshToken = refreshTokenPort.createToken(user.getId(), user.getId().value().toString());
+        String accessToken  = jwtTokenPort.generateAccessToken(user.getId(), user.getEmail().value());
+        //String refreshToken = refreshTokenPort.createToken(user.getId(), command.userAgent()); // ← userAgent en lugar de userId
+        String refreshToken = refreshTokenPort.createToken(user.getId(), UUID.randomUUID().toString());
 
-        // 5. Auditoría
         auditLogPort.logAction(user.getId(),
                 isNewUser ? "REGISTER_SOCIAL" : "LOGIN_SOCIAL",
                 command.ipAddress(),
@@ -98,8 +111,8 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                900000L,
-                java.time.Instant.now().plusSeconds(900),
+                jwtExpirationMs,                           // ← desde config
+                Instant.now().plusMillis(jwtExpirationMs), // ← calculado
                 new AuthResponseDto.UserInfoDto(
                         user.getId().value().toString(),
                         user.getEmail().value(),

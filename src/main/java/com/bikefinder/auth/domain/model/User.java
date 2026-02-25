@@ -110,6 +110,16 @@ public class User {
         }
     }
 
+    /**
+     * Actualiza la foto de perfil obtenida desde el proveedor social.
+     * Solo actualiza si el nuevo valor no es nulo.
+     */
+    public void updateAvatar(String avatarUrl) {
+        if (avatarUrl == null || avatarUrl.isBlank()) {
+            throw new IllegalArgumentException("El avatarUrl no puede ser nulo o vacío");
+        }
+        this.avatarUrl = avatarUrl;
+    }
 
     // --- Getters (Solo lo necesario para la lectura) ---
     public UserId getId() { return id; }

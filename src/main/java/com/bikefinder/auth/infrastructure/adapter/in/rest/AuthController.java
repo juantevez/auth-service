@@ -3,6 +3,7 @@ package com.bikefinder.auth.infrastructure.adapter.in.rest;
 import com.bikefinder.auth.application.command.*;
 import com.bikefinder.auth.application.dto.AuthResponseDto;
 import com.bikefinder.auth.application.port.input.*;
+import com.bikefinder.auth.domain.valueobject.UserId;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.LoginRequestDto;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.LogoutRequestDto;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.RefreshTokenRequestDto;
@@ -14,7 +15,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -27,6 +31,8 @@ public class AuthController {
     private final LoginUserUseCase loginUserUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
     private final LogoutUseCase logoutUseCase;
+
+    private final GetUserProfileUseCase getUserProfileUseCase;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar nuevo usuario", description = "Crea una cuenta con email y contraseña")
@@ -87,6 +93,14 @@ public class AuthController {
 
         logoutUseCase.execute(request.refreshToken(), userId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Obtener perfil", description = "Retorna los datos del usuario autenticado")
+    public ResponseEntity<AuthResponseDto.UserInfoDto> me(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        AuthResponseDto.UserInfoDto profile = getUserProfileUseCase.execute(new UserId(userId));
+        return ResponseEntity.ok(profile);
     }
 
     private String getClientIp(HttpServletRequest request) {

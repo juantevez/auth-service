@@ -31,7 +31,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserStatus status;  // ← ANTES: private String status;
+    private UserStatus status;
 
     @Column(name = "full_name")
     private String fullName;
@@ -39,7 +39,7 @@ public class UserEntity {
     @Column(name = "avatar_url")
     private String avatarUrl;
     @Column(name = "phone_number", length = 20, unique = true)
-    private String phoneNumber;  // Almacenar como String (E.164)
+    private String phoneNumber;
     @Column(name = "phone_verified")
     private Boolean phoneVerified = false;
     @Column(name = "created_at", nullable = false)
@@ -57,9 +57,6 @@ public class UserEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SocialIdentityEntity> socialIdentities = new ArrayList<>();
-
-    //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    //private CredentialEntity credential;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private CredentialEntity credential;

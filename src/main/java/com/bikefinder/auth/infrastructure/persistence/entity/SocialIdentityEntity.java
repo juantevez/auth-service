@@ -24,7 +24,7 @@ public class SocialIdentityEntity {
     private UserEntity user;
 
     @Column(nullable = false)
-    private String provider; // GOOGLE, APPLE, FACEBOOK
+    private String provider;
 
     @Column(name = "provider_uid", nullable = false)
     private String providerUid;

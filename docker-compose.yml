@@ -20,6 +20,9 @@ services:
       AUTH_JWT_REFRESH_EXPIRATION_MS: 604800000
       AUTH_JWT_ISSUER: auth-service
       AUTH_JWT_AUDIENCE: bike-ecosystem
+      AUTH_JWT_KEY_ID: auth-service-key-v1
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}       # ← agregar
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET} # ← agregar
       LOGGING_LEVEL_ROOT: INFO
       LOGGING_LEVEL_COM_BIKEFINDER_AUTH: DEBUG
     volumes:
