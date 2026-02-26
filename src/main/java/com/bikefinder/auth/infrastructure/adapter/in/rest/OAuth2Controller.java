@@ -77,8 +77,8 @@ public class OAuth2Controller {
         log.info("Social token login - provider: {}", request.provider());
 
         Map<String, Object> claims = switch (request.provider().toLowerCase()) {
-            case "google" -> socialTokenValidator.validateGoogle(request.idToken());
-            //case "apple"  -> socialTokenValidator.validateApple(request.idToken());
+            case "google"   -> socialTokenValidator.validateGoogle(request.token());
+            case "facebook" -> socialTokenValidator.validateMeta(request.token());
             default -> throw new IllegalArgumentException("Proveedor no soportado: " + request.provider());
         };
 

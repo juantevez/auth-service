@@ -74,15 +74,22 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
                 userRepository.save(user);
                 log.info("Identidad social vinculada a usuario existente: {}", user.getId());
             } else {
+                // 3. Crear nuevo usuario
                 UserId userId = UserId.generate();
-                user = User.register(userId, new Email(command.email()), command.fullName());
+
+                // Meta puede no devolver email — generamos uno placeholder
+                String email = command.email() != null
+                        ? command.email()
+                        : command.provider() + "_" + command.providerId() + "@noemail.placeholder";
+
+                user = User.register(userId, new Email(email), command.fullName());
                 user.linkSocialIdentity(new SocialIdentity(command.provider(), command.providerId()));
 
                 if (command.avatarUrl() != null) {
-                    user.updateAvatar(command.avatarUrl()); // ← solo updateAvatar, sin save intermedio
+                    user.updateAvatar(command.avatarUrl());
                 }
 
-                userRepository.save(user); // ← un solo save
+                userRepository.save(user);
                 isNewUser = true;
                 log.info("Nuevo usuario creado vía social: {}", userId);
             }
