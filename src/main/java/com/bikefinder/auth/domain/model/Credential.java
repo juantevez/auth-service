@@ -32,6 +32,12 @@ public class Credential {
         }
     }
 
+    public void updatePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+        this.failedLoginAttempts = 0;  // resetear intentos fallidos al cambiar password
+        this.lockedUntil = null;        // desbloquear cuenta si estaba bloqueada
+    }
+
     public void resetFailedAttempts() {
         this.failedLoginAttempts = 0;
         this.lockedUntil = null;

@@ -24,6 +24,7 @@ public class User {
     private Credential credential;
     private final List<SocialIdentity> socialIdentities;
 
+    private boolean emailVerified;
     private Instant createdAt;
     private Instant lastLoginAt;
     private int version;
@@ -37,6 +38,7 @@ public class User {
         this.socialIdentities = new ArrayList<>();
         this.createdAt = Instant.now();
         this.version = 0;
+        this.emailVerified = false;
     }
 
     public static User register(UserId id, Email email, String fullName) {
@@ -47,6 +49,7 @@ public class User {
     public static User fromPersistence(UUID id, String email, String status, String fullName, String avatarUrl) {
         User user = new User(new UserId(id), new Email(email), fullName);
         user.status = UserStatus.valueOf(status);
+        user.emailVerified = false;
         user.avatarUrl = avatarUrl;
         return user;
     }
@@ -121,6 +124,17 @@ public class User {
         this.avatarUrl = avatarUrl;
     }
 
+    public void verifyEmail() {
+        this.emailVerified = true;
+        if (this.status == UserStatus.PENDING_VERIFICATION) {
+            this.status = UserStatus.ACTIVE; // al verificar email, activar cuenta
+        }
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
     // --- Getters (Solo lo necesario para la lectura) ---
     public UserId getId() { return id; }
     public Email getEmail() { return email; }
@@ -133,6 +147,10 @@ public class User {
     }
     public List<SocialIdentity> getSocialIdentities() { return List.copyOf(socialIdentities); }
     public Instant getLastLoginAt() { return lastLoginAt; }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
     public PhoneNumber getPhoneNumber() { return phoneNumber; }
     public boolean isPhoneVerified() { return phoneVerified; }
 }

@@ -4,22 +4,31 @@ package com.bikefinder.auth.application.service;
 import com.bikefinder.auth.application.command.RegisterUserCommand;
 import com.bikefinder.auth.application.dto.AuthResponseDto;
 import com.bikefinder.auth.application.port.input.RegisterUserUseCase;
-import com.bikefinder.auth.application.port.output.*;
+import com.bikefinder.auth.application.port.output.AuditLogPort;
+import com.bikefinder.auth.application.port.output.EmailPort;
+import com.bikefinder.auth.application.port.output.JwtTokenPort;
+import com.bikefinder.auth.application.port.output.PasswordEncoderPort;
+import com.bikefinder.auth.application.port.output.RefreshTokenPort;
+import com.bikefinder.auth.application.port.output.UserEventPort;
 import com.bikefinder.auth.domain.exception.DomainException;
 import com.bikefinder.auth.domain.model.Credential;
 import com.bikefinder.auth.domain.model.User;
+import com.bikefinder.auth.domain.model.VerificationToken;
+import com.bikefinder.auth.domain.model.VerificationTokenType;
 import com.bikefinder.auth.domain.repository.UserRepository;
+import com.bikefinder.auth.domain.repository.VerificationTokenRepository;
 import com.bikefinder.auth.domain.valueobject.Email;
 import com.bikefinder.auth.domain.valueobject.UserId;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RegisterUserServiceImpl implements RegisterUserUseCase {
 
@@ -29,6 +38,29 @@ public class RegisterUserServiceImpl implements RegisterUserUseCase {
     private final RefreshTokenPort refreshTokenPort;
     private final AuditLogPort auditLogPort;
     private final UserEventPort userEventPort;
+    private final VerificationTokenRepository tokenRepository;
+    private final EmailPort emailPort;
+
+    @Value("${auth.jwt.expiration-ms}")
+    private long jwtExpirationMs;
+
+    public RegisterUserServiceImpl(UserRepository userRepository,
+                                   PasswordEncoderPort passwordEncoder,
+                                   JwtTokenPort jwtTokenPort,
+                                   RefreshTokenPort refreshTokenPort,
+                                   AuditLogPort auditLogPort,
+                                   UserEventPort userEventPort,
+                                   VerificationTokenRepository tokenRepository,
+                                   EmailPort emailPort) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenPort = jwtTokenPort;
+        this.refreshTokenPort = refreshTokenPort;
+        this.auditLogPort = auditLogPort;
+        this.userEventPort = userEventPort;
+        this.tokenRepository = tokenRepository;
+        this.emailPort = emailPort;
+    }
 
     @Override
     @Transactional
@@ -53,11 +85,24 @@ public class RegisterUserServiceImpl implements RegisterUserUseCase {
         // 4. Guardar usuario
         user = userRepository.save(user);
 
-        // 5. Generar tokens
-        String accessToken = jwtTokenPort.generateAccessToken(userId, email.value());
-        String refreshToken = refreshTokenPort.createToken(userId, userId.value().toString());
+        // 5. Generar y enviar email de verificación
+        VerificationToken verificationToken = VerificationToken.create(
+                userId,
+                VerificationTokenType.EMAIL_VERIFICATION,
+                1440 // 24 horas
+        );
+        tokenRepository.save(verificationToken);
+        emailPort.sendVerificationEmail(
+                email.value(),
+                command.fullName(),
+                verificationToken.getToken()
+        );
 
-        // 6. Auditoría y Eventos
+        // 6. Generar tokens JWT
+        String accessToken = jwtTokenPort.generateAccessToken(userId, email.value());
+        String refreshToken = refreshTokenPort.createToken(userId, UUID.randomUUID().toString());
+
+        // 7. Auditoría y Eventos
         auditLogPort.logAction(userId, "REGISTER", null, Map.of("email", email.value()));
         userEventPort.publishUserRegistered(userId, email.value());
 
@@ -71,8 +116,8 @@ public class RegisterUserServiceImpl implements RegisterUserUseCase {
                 accessToken,
                 refreshToken,
                 "Bearer",
-                900000L, // 15 min
-                Instant.now().plusSeconds(900),
+                jwtExpirationMs,
+                Instant.now().plusMillis(jwtExpirationMs),
                 new AuthResponseDto.UserInfoDto(
                         user.getId().value().toString(),
                         user.getEmail().value(),
