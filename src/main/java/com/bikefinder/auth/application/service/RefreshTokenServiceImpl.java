@@ -47,6 +47,17 @@ public class RefreshTokenServiceImpl implements RefreshTokenUseCase {
 
         log.info("Token refrescado para usuario: {}", userId);
 
+        AuthResponseDto.UserInfoDto.LocationDto location = null;
+        if (user.getLocalityId() != null || user.getLocalityName() != null) {
+            location = new AuthResponseDto.UserInfoDto.LocationDto(
+                    user.getLocalityId(),
+                    user.getLocalityName(),
+                    user.getDepartmentName(),
+                    user.getProvinceName(),
+                    user.getCountryName()
+            );
+        }
+
         return new AuthResponseDto(
                 newAccessToken,
                 newRefreshToken,
@@ -57,9 +68,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
-                        user.getPhoneNumber(),
+                        user.getPhoneNumber() != null ? user.getPhoneNumber().getValue() : null,
                         user.isPhoneVerified(),
-                        user.getAvatarUrl()
+                        user.getAvatarUrl(),
+                        user.getGender() != null ? user.getGender().name() : null,
+                        user.getBirthDate(),
+                        location
                 )
         );
     }

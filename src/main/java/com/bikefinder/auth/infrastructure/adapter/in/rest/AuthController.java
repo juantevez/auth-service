@@ -3,11 +3,13 @@ package com.bikefinder.auth.infrastructure.adapter.in.rest;
 import com.bikefinder.auth.application.command.*;
 import com.bikefinder.auth.application.dto.AuthResponseDto;
 import com.bikefinder.auth.application.port.input.*;
+import com.bikefinder.auth.application.port.output.JwtTokenPort;
 import com.bikefinder.auth.domain.valueobject.UserId;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.LoginRequestDto;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.LogoutRequestDto;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.RefreshTokenRequestDto;
 import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.RegisterRequestDto;
+import com.bikefinder.auth.infrastructure.adapter.in.rest.dto.UpdateProfileRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,8 +33,9 @@ public class AuthController {
     private final LoginUserUseCase loginUserUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
     private final LogoutUseCase logoutUseCase;
-
     private final GetUserProfileUseCase getUserProfileUseCase;
+    private final UpdateUserProfileUseCase updateUserProfileUseCase;
+    private final JwtTokenPort jwtTokenPort;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar nuevo usuario", description = "Crea una cuenta con email y contraseña")
@@ -97,9 +100,29 @@ public class AuthController {
 
     @GetMapping("/me")
     @Operation(summary = "Obtener perfil", description = "Retorna los datos del usuario autenticado")
-    public ResponseEntity<AuthResponseDto.UserInfoDto> me(Authentication authentication) {
-        UUID userId = UUID.fromString(authentication.getName());
-        AuthResponseDto.UserInfoDto profile = getUserProfileUseCase.execute(new UserId(userId));
+    public ResponseEntity<AuthResponseDto.UserInfoDto> me(
+            @RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.replace("Bearer ", "");
+        UserId userId = jwtTokenPort.extractUserId(token);
+
+        log.info("Obteniendo perfil para usuario: {}", userId);
+        AuthResponseDto.UserInfoDto profile = getUserProfileUseCase.execute(userId);
+        return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/me")
+    @Operation(summary = "Actualizar perfil", description = "Actualiza los datos del usuario autenticado")
+    public ResponseEntity<AuthResponseDto.UserInfoDto> updateProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody UpdateProfileRequestDto request) {
+
+        String token = authHeader.replace("Bearer ", "");
+        UserId userId = jwtTokenPort.extractUserId(token);
+
+        log.info("Actualizando perfil para usuario: {}", userId);
+
+        AuthResponseDto.UserInfoDto profile = updateUserProfileUseCase.execute(userId, request);
         return ResponseEntity.ok(profile);
     }
 

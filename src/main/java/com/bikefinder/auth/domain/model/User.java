@@ -6,6 +6,7 @@ import com.bikefinder.auth.domain.valueobject.UserId;
 import com.bikefinder.auth.domain.valueobject.UserStatus;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,22 @@ public class User {
     private Instant createdAt;
     private Instant lastLoginAt;
     private int version;
+
+    // ===== NUEVOS CAMPOS =====
+    private Gender gender;
+    private LocalDate birthDate;
+    private Integer localityId;
+    private String localityName;
+    private String departmentName;
+    private String provinceName;
+    private String countryName;
+
+    public enum Gender {
+        MALE,
+        FEMALE,
+        ALIEN,
+        PREFER_NOT_TO_SAY
+    }
 
     // Constructor para creación nueva
     private User(UserId id, Email email, String fullName) {
@@ -148,9 +165,42 @@ public class User {
     public List<SocialIdentity> getSocialIdentities() { return List.copyOf(socialIdentities); }
     public Instant getLastLoginAt() { return lastLoginAt; }
 
+    public Gender getGender() { return gender; }
+    public void setGender(Gender gender) { this.gender = gender; }
+
+    public LocalDate getBirthDate() { return birthDate; }
+    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
+
+    public Integer getLocalityId() { return localityId; }
+    public void setLocalityId(Integer localityId) { this.localityId = localityId; }
+
+    public String getLocalityName() { return localityName; }
+    public void setLocalityName(String localityName) { this.localityName = localityName; }
+
+    public String getDepartmentName() { return departmentName; }
+    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
+
+    public String getProvinceName() { return provinceName; }
+    public void setProvinceName(String provinceName) { this.provinceName = provinceName; }
+
+    public String getCountryName() { return countryName; }
+    public void setCountryName(String countryName) { this.countryName = countryName; }
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
     }
     public PhoneNumber getPhoneNumber() { return phoneNumber; }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public void setPhoneNumber(PhoneNumber phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setPhoneVerified(boolean phoneVerified) {
+        this.phoneVerified = phoneVerified;
+    }
+
     public boolean isPhoneVerified() { return phoneVerified; }
 }

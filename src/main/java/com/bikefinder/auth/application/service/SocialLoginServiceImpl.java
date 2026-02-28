@@ -114,6 +114,18 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
     }
 
     private AuthResponseDto buildAuthResponse(User user, String accessToken, String refreshToken) {
+
+        AuthResponseDto.UserInfoDto.LocationDto location = null;
+        if (user.getLocalityId() != null || user.getLocalityName() != null) {
+            location = new AuthResponseDto.UserInfoDto.LocationDto(
+                    user.getLocalityId(),
+                    user.getLocalityName(),
+                    user.getDepartmentName(),
+                    user.getProvinceName(),
+                    user.getCountryName()
+            );
+        }
+
         return new AuthResponseDto(
                 accessToken,
                 refreshToken,
@@ -124,9 +136,12 @@ public class SocialLoginServiceImpl implements SocialLoginUseCase {
                         user.getId().value().toString(),
                         user.getEmail().value(),
                         user.getFullName(),
-                        user.getPhoneNumber(),
+                        user.getPhoneNumber() != null ? user.getPhoneNumber().getValue() : null,
                         user.isPhoneVerified(),
-                        user.getAvatarUrl()
+                        user.getAvatarUrl(),
+                        user.getGender() != null ? user.getGender().name() : null,
+                        user.getBirthDate(),
+                        location
                 )
         );
     }

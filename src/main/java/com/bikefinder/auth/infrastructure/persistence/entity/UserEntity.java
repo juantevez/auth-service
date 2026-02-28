@@ -5,6 +5,7 @@ import com.bikefinder.auth.domain.valueobject.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.List;
 import java.util.ArrayList;
@@ -42,6 +43,31 @@ public class UserEntity {
     private String phoneNumber;
     @Column(name = "phone_verified")
     private Boolean phoneVerified = false;
+
+    // ===== NUEVOS CAMPOS =====
+
+    @Column(name = "gender", length = 20)
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Column(name = "locality_id")
+    private Integer localityId;
+
+    @Column(name = "locality_name", length = 100)
+    private String localityName;
+
+    @Column(name = "department_name", length = 100)
+    private String departmentName;
+
+    @Column(name = "province_name", length = 100)
+    private String provinceName;
+
+    @Column(name = "country_name", length = 100)
+    private String countryName;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -70,7 +96,12 @@ public class UserEntity {
             this.version = 0;
         }
     }
-
+    public enum Gender {
+        MALE,
+        FEMALE,
+        ALIEN,
+        PREFER_NOT_TO_SAY
+    }
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = Instant.now();

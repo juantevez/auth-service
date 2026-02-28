@@ -3,6 +3,7 @@ package com.bikefinder.auth.application.dto;
 import com.bikefinder.auth.domain.valueobject.PhoneNumber;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public record AuthResponseDto(
         String accessToken,
@@ -16,8 +17,19 @@ public record AuthResponseDto(
             String id,
             String email,
             String fullName,
-            PhoneNumber phoneNumber,
+            String phoneNumber,
             Boolean phoneVerified,
-            String avatarUrl
-    ) {}
+            String avatarUrl,
+            String gender,
+            LocalDate birthDate,
+            LocationDto location
+    ) {
+        public record LocationDto(
+                Integer localityId,
+                String localityName,
+                String departmentName,
+                String provinceName,
+                String countryName
+        ) {}
+    }
 }

@@ -24,7 +24,8 @@ public class EmailAdapter implements EmailPort {
     @Override
     public void sendVerificationEmail(String to, String fullName, String token) {
         String subject = "Verificá tu email - Bike Ecosystem";
-        String verificationUrl = frontendUrl + "/auth/verify-email?token=" + token;
+        //String verificationUrl = frontendUrl + "/auth/verify-email?token=" + token;
+        String verificationUrl = frontendUrl + "/verify-email.html?token=" + token;
         String body = """
                 Hola %s,
                 
@@ -45,7 +46,8 @@ public class EmailAdapter implements EmailPort {
     @Override
     public void sendPasswordResetEmail(String to, String fullName, String token) {
         String subject = "Resetear contraseña - Bike Ecosystem";
-        String resetUrl = frontendUrl + "/auth/reset-password?token=" + token;
+        //String resetUrl = frontendUrl + "/auth/reset-password?token=" + token;
+        String resetUrl = frontendUrl + "/reset-password.html?token=" + token;
         String body = """
                 Hola %s,
                 

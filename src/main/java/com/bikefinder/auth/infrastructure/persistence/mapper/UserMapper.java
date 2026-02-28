@@ -16,8 +16,15 @@ public interface UserMapper {
     @Mapping(target = "email", source = "email.value")
     @Mapping(target = "status", qualifiedByName = "statusToString")
     @Mapping(target = "emailVerified", constant = "false")
-    @Mapping(target = "phoneNumber", source = "phoneNumber.value")  // ← Nuevo
-    @Mapping(target = "phoneVerified", source = "phoneVerified")    // ← Nuevo
+    @Mapping(target = "phoneNumber", source = "phoneNumber.value")
+    @Mapping(target = "phoneVerified", source = "phoneVerified")
+    @Mapping(target = "gender", qualifiedByName = "genderToString")
+    @Mapping(target = "birthDate", source = "birthDate")
+    @Mapping(target = "localityId", source = "localityId")
+    @Mapping(target = "localityName", source = "localityName")
+    @Mapping(target = "departmentName", source = "departmentName")
+    @Mapping(target = "provinceName", source = "provinceName")
+    @Mapping(target = "countryName", source = "countryName")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
@@ -36,5 +43,10 @@ public interface UserMapper {
     @Named("stringToUserStatus")
     default UserStatus stringToUserStatus(String status) {
         return status != null ? UserStatus.valueOf(status) : UserStatus.ACTIVE;
+    }
+
+    @Named("genderToString")
+    default String genderToString(User.Gender gender) {
+        return gender != null ? gender.name() : null;
     }
 }
